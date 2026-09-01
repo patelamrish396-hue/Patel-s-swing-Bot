@@ -25,6 +25,9 @@ def analyze(ticker: str, df: pd.DataFrame) -> list:
     if history.empty:
         return []
 
+    if latest["Close"] < config.MIN_STOCK_PRICE:
+        return []
+
     signals = []
 
     # --- Volume surge: this bar's volume vs. the average volume seen in
@@ -33,12 +36,14 @@ def analyze(ticker: str, df: pd.DataFrame) -> list:
     if not same_slot.empty:
         avg_vol = same_slot["Volume"].mean()
         if avg_vol > 0 and latest["Volume"] >= config.VOLUME_SURGE_MULTIPLIER * avg_vol:
+            multiple = latest["Volume"] / avg_vol
             signals.append({
                 "type": "VOLUME_SURGE",
                 "detail": (
                     f"Vol {int(latest['Volume']):,} vs avg {int(avg_vol):,} "
-                    f"({latest['Volume'] / avg_vol:.1f}x) for this time of day"
+                    f"({multiple:.1f}x) for this time of day"
                 ),
+                "strength": multiple,
             })
 
     # --- Breakout above N-day high ---
@@ -47,26 +52,15 @@ def analyze(ticker: str, df: pd.DataFrame) -> list:
     if not lookback_high.empty:
         prior_high = lookback_high.max()
         if latest["Close"] > prior_high:
+            pct_above = (latest["Close"] - prior_high) / prior_high * 100
             signals.append({
                 "type": "BREAKOUT_HIGH",
                 "detail": (
                     f"Price {latest['Close']:.2f} broke above "
-                    f"{config.BREAKOUT_LOOKBACK_DAYS}-day high {prior_high:.2f}"
+                    f"{config.BREAKOUT_LOOKBACK_DAYS}-day high {prior_high:.2f} "
+                    f"(+{pct_above:.1f}%)"
                 ),
-            })
-
-    # --- Breakdown below N-day low ---
-    daily_low = history.groupby("date")["Low"].min()
-    lookback_low = daily_low.tail(config.BREAKOUT_LOOKBACK_DAYS)
-    if not lookback_low.empty:
-        prior_low = lookback_low.min()
-        if latest["Close"] < prior_low:
-            signals.append({
-                "type": "BREAKDOWN_LOW",
-                "detail": (
-                    f"Price {latest['Close']:.2f} broke below "
-                    f"{config.BREAKOUT_LOOKBACK_DAYS}-day low {prior_low:.2f}"
-                ),
+                "strength": pct_above,
             })
 
     # --- Sharp move within this single 15m bar ---
@@ -82,6 +76,7 @@ def analyze(ticker: str, df: pd.DataFrame) -> list:
                         f"Moved {direction} {abs(pct):.1f}% in the last "
                         f"{config.YF_INTERVAL} bar"
                     ),
+                    "strength": abs(pct),
                 })
 
     return signals
