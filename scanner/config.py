@@ -4,9 +4,17 @@ import os
 NSE_EQUITY_LIST_URL = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
 
 # --- Signal thresholds (override via repo/workflow env vars if you want) ---
-VOLUME_SURGE_MULTIPLIER = float(os.environ.get("VOLUME_SURGE_MULTIPLIER", 3.0))
+VOLUME_SURGE_MULTIPLIER = float(os.environ.get("VOLUME_SURGE_MULTIPLIER", 12.0))
 BREAKOUT_LOOKBACK_DAYS = int(os.environ.get("BREAKOUT_LOOKBACK_DAYS", 20))
 PRICE_MOVE_THRESHOLD_PCT = float(os.environ.get("PRICE_MOVE_THRESHOLD_PCT", 3.0))
+
+# --- List-length controls ---
+# Skip low-priced/illiquid stocks that tend to spike on tiny volume and
+# flood the alert list with noise.
+MIN_STOCK_PRICE = float(os.environ.get("MIN_STOCK_PRICE", 20))
+# Hard cap on how many alerts get sent per run, keeping only the
+# strongest ones (highest volume multiple / furthest breakout / biggest move).
+TOP_N_PER_RUN = int(os.environ.get("TOP_N_PER_RUN", 15))
 
 # --- Data fetching ---
 YF_PERIOD = "60d"        # max history yfinance allows for 15m bars
