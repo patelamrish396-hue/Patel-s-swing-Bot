@@ -12,6 +12,9 @@ PRICE_MOVE_THRESHOLD_PCT = float(os.environ.get("PRICE_MOVE_THRESHOLD_PCT", 3.0)
 # Skip low-priced/illiquid stocks that tend to spike on tiny volume and
 # flood the alert list with noise.
 MIN_STOCK_PRICE = float(os.environ.get("MIN_STOCK_PRICE", 20))
+# Skip stocks whose typical daily trading volume is below this — a "12x
+# surge" on a stock that normally trades 500 shares/day isn't meaningful.
+MIN_AVG_DAILY_VOLUME = float(os.environ.get("MIN_AVG_DAILY_VOLUME", 2500))
 # Hard cap on how many alerts get sent per run, keeping only the
 # strongest ones (highest volume multiple / furthest breakout / biggest move).
 TOP_N_PER_RUN = int(os.environ.get("TOP_N_PER_RUN", 15))
