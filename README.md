@@ -4,10 +4,13 @@ Scans (almost) every NSE-listed stock every 15 minutes during market hours and
 pings a Telegram chat when it sees:
 
 - 📊 **Volume surge** — current 15-min bar volume vs. the average for that
-  same time-of-day slot over recent sessions
+  same time-of-day slot over recent sessions (default: 12x)
 - 🚀 **Breakout** — price closes above its N-day high (default 20 days)
-- 🔻 **Breakdown** — price closes below its N-day low
 - ⚡ **Sharp move** — a single 15-min bar moves more than a threshold % (default 3%)
+
+Each run only sends the strongest `TOP_N_PER_RUN` alerts (ranked by volume
+multiple / % above breakout / % move) and skips stocks below `MIN_STOCK_PRICE`,
+to keep the list manageable.
 
 Runs for free on GitHub Actions — no server needed.
 
@@ -65,9 +68,11 @@ Everything's tunable via environment variables in `.github/workflows/scan.yml`
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `VOLUME_SURGE_MULTIPLIER` | 3.0 | Alert when volume ≥ this × the same-time average |
-| `BREAKOUT_LOOKBACK_DAYS` | 20 | Days used for the high/low breakout check |
+| `VOLUME_SURGE_MULTIPLIER` | 12.0 | Alert when volume ≥ this × the same-time average |
+| `BREAKOUT_LOOKBACK_DAYS` | 20 | Days used for the high breakout check |
 | `PRICE_MOVE_THRESHOLD_PCT` | 3.0 | % move in one 15-min bar to trigger an alert |
+| `MIN_STOCK_PRICE` | 20 | Skip stocks priced below this (cuts penny-stock noise) |
+| `TOP_N_PER_RUN` | 15 | Max alerts sent per run, keeping the strongest ones |
 | `COOLDOWN_MINUTES` | 60 | Don't re-alert the same stock+signal within this window |
 | `CHUNK_SIZE` | 150 | Tickers per yfinance batch request |
 
