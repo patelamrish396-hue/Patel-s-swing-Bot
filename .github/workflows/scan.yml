@@ -2,11 +2,11 @@ name: NSE Breakout Scanner
 
 on:
   schedule:
-    # Every 15 min, roughly 8:30am-3:35pm IST (03:00-10:05 UTC), Mon-Fri.
+    # Every 30 min, roughly 8:30am-3:35pm IST (03:00-10:05 UTC), Mon-Fri.
     # The script itself double-checks market hours (9:15-15:30 IST) and
     # exits early outside that window, so a little slack here is fine.
-    - cron: "*/15 3-9 * * 1-5"
-    - cron: "0,15,30 10 * * 1-5"
+    - cron: "0,30 3-9 * * 1-5"
+    - cron: "0,30 10 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
@@ -14,12 +14,12 @@ permissions:
 
 concurrency:
   group: nse-scanner
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
