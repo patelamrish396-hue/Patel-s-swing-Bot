@@ -8,7 +8,6 @@ from scanner import signals as signal_engine
 ICONS = {
     "VOLUME_SURGE": "📊",
     "BREAKOUT_HIGH": "🚀",
-    "BREAKDOWN_LOW": "🔻",
     "SHARP_MOVE": "⚡",
 }
 
@@ -43,15 +42,25 @@ def main():
     print(f"Got data for {len(price_data)}/{len(tickers)} symbols")
 
     state = state_store.load_state()
-    alerts = []
+    candidates = []
 
     for ticker, df in price_data.items():
         for sig in signal_engine.analyze(ticker, df):
             if state_store.should_alert(state, ticker, sig["type"]):
-                alerts.append((ticker, sig))
-                state_store.mark_alerted(state, ticker, sig["type"])
+                candidates.append((ticker, sig))
 
-    print(f"{len(alerts)} new alert(s) to send")
+    print(f"{len(candidates)} candidate alert(s) before ranking/cap")
+
+    # Keep only the strongest TOP_N_PER_RUN so the message doesn't get huge.
+    # Anything not sent this run is left un-marked, so it's free to be
+    # picked up (and re-ranked) on the next scan instead of being lost.
+    candidates.sort(key=lambda pair: pair[1].get("strength", 0), reverse=True)
+    alerts = candidates[: config.TOP_N_PER_RUN]
+
+    for ticker, sig in alerts:
+        state_store.mark_alerted(state, ticker, sig["type"])
+
+    print(f"{len(alerts)} alert(s) selected to send (top {config.TOP_N_PER_RUN})")
 
     # Batch into digest messages rather than one Telegram message per stock
     batch = []
